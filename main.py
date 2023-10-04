@@ -5,10 +5,6 @@ from discord.ext import tasks
 import random
 import os
 
-# bot description
-command_prefix = '!'
-description = "Copy cat of the 2020 Discord Trickcord Treat bot"
-
 cmd_map = {
     'send_treater': 'trick or treat...',
     'trick': 'haha, send a trick!',

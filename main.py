@@ -4,7 +4,6 @@ from discord import app_commands, message
 from dotenv import load_dotenv
 from discord.ext import tasks
 import random
-import sqlite3
 import db
 import os
 
@@ -112,7 +111,7 @@ async def score_command(interaction):
         await ctx.author.send("Your name is not on the leaderboard!")
     else:
         trick, treat = db.get_score(interaction.user.name)
-        await interaction.user.send(f"Your trick score is {trick} and your treat score is {treat}")
+        await interaction.response.send_message(f"{interaction.user.mention}, Your trick score is {trick} and your treat score is {treat}", ephemeral=True)
 
 
 if __name__ == '__main__':

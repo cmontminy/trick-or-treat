@@ -1,9 +1,11 @@
 import asyncio
 import discord
-from discord import app_commands
+from discord import app_commands, message
 from dotenv import load_dotenv
 from discord.ext import tasks
 import random
+import sqlite3
+import db
 import os
 
 cmd_map = {
@@ -41,7 +43,7 @@ async def on_ready():
     global TREATER_ACTIVE
     TREATER_ACTIVE = False
 
-    print("ready !!")
+    print("ready!")
     await start_night()
 
 
@@ -51,9 +53,9 @@ async def start_night():
     if not TREATER_ACTIVE:
         # Decrease this interval for testing.
         embed = discord.Embed(title="It's Halloween night!",
-                            description="Friends will start trick-or-treating in 30 seconds.")
+                              description="Friends will start trick-or-treating soon.")
         await client.get_channel(int(os.environ.get('CHANNEL_ID'))).send(embed=embed)
-        await asyncio.sleep(30)
+        await asyncio.sleep(10)
         send_trick_or_treater.start()
 
 
@@ -72,9 +74,12 @@ async def send_trick_or_treater():
 
 @tree.command(name="treat", description="Answer the door with a sweet treat if a friend is there", guild=discord.Object(os.environ.get('GUILD_ID')))
 async def treat_command(interaction):
+    if db.check_table(interaction.user.name) == None:
+        db.add_user(interaction.user.name)
     global TREATER_ACTIVE
     if TREATER_ACTIVE:
         TREATER_ACTIVE = False
+        db.update_score(interaction.user.name, "treat")
         embed = discord.Embed(
             title=f"Congrats! 🎉", description=f'{interaction.user.mention}, You gave our friend a treat!')
         await interaction.response.send_message(embed=embed)
@@ -86,9 +91,12 @@ async def treat_command(interaction):
 
 @tree.command(name="trick", description="commit a hate crime against the guest!", guild=discord.Object(os.environ.get('GUILD_ID')))
 async def trick_command(interaction):
+    if db.check_table(interaction.user.name) == None:
+        db.add_user(interaction.user.name)
     global TREATER_ACTIVE
     if TREATER_ACTIVE:
         TREATER_ACTIVE = False
+        db.update_score(interaction.user.name, "trick")
         embed = discord.Embed(
             title=f'Hehehehe!', description=f'{interaction.user.mention}, you just tricked your guest')
         await interaction.response.send_message(embed=embed)
@@ -98,6 +106,16 @@ async def trick_command(interaction):
         await interaction.response.send_message(embed=embed)
 
 
+@tree.command(name="score", description="check your scores", guild=discord.Object(os.environ.get('GUILD_ID')))
+async def score_command(interaction):
+    if db.check_table(interaction.user.name) == None:
+        await ctx.author.send("Your name is not on the leaderboard!")
+    else:
+        trick, treat = db.get_score(interaction.user.name)
+        await interaction.user.send(f"Your trick score is {trick} and your treat score is {treat}")
+
+
 if __name__ == '__main__':
     load_dotenv()
+    db.create_tables()
     client.run(os.environ.get('BOT_TOKEN'))

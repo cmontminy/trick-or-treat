@@ -1,6 +1,6 @@
 import asyncio
 import discord
-from discord import app_commands, message
+from discord import app_commands
 from dotenv import load_dotenv
 from discord.ext import tasks
 import random
@@ -8,7 +8,6 @@ import db
 import os
 
 cmd_map = {
-    'send_treater': 'trick or treat...',
     'trick': 'haha, send a trick!',
     'treat': 'yippee, send a treat!',
     'commands': 'List avaialble commands and their descriptions',
@@ -22,11 +21,10 @@ tree = app_commands.CommandTree(client)
 treaters_array = []
 
 load_dotenv()
-# jonah server = 936546533007044628, dts = 274306544017997835
-# TREATER_ACTIVE = False
-
 
 # start up
+
+
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user.name}")
@@ -108,11 +106,19 @@ async def trick_command(interaction):
 @tree.command(name="score", description="check your scores", guild=discord.Object(os.environ.get('GUILD_ID')))
 async def score_command(interaction):
     if db.check_table(interaction.user.name) == None:
-        await ctx.author.send("Your name is not on the leaderboard!")
+        await interaction.response.send_message("Your name is not on the leaderboard!", ephemeral=True)
     else:
         trick, treat = db.get_score(interaction.user.name)
         await interaction.response.send_message(f"{interaction.user.mention}, Your trick score is {trick} and your treat score is {treat}", ephemeral=True)
 
+
+@tree.command(name="commands", description="list available commands", guild=discord.Object(os.environ.get('GUILD_ID')))
+async def check_command(interaction):
+    embed = discord.Embed(
+        title='Commands List', description='List of available commands and their descriptions', color=discord.Color.blue())
+    for cmd, desc in cmd_map.items():
+        embed.add_field(name=f"{cmd}", value=desc, inline=False)
+    await interaction.response.send_message(embed=embed)
 
 if __name__ == '__main__':
     load_dotenv()
